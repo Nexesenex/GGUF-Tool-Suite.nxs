@@ -98,7 +98,7 @@ if "%FILEID%"=="0" (
 ) else (
   set "IDX=%FILEID%"
   call :padnum IDX 5
-  set "FILENAME=%MODEL_NAME%-%MAINTAINER%-%QUANT_U%-SPECIAL_TENSOR-%IDX%-of-%CHUNKS_PAD%.gguf"
+  set "FILENAME=%MODEL_NAME%-%MAINTAINER%-%QUANT_U%-SPECIAL_TENSOR-!IDX!-of-%CHUNKS_PAD%.gguf"
 )
 if "%CUSTOM_FILENAME%"=="" set "CUSTOM_FILENAME=%FILENAME%"
 
@@ -170,9 +170,32 @@ REM ---- Helper functions ----
 :toupper
 for %%a in (%1) do (
   set "tmp=!%%a!"
-  for %%b in (a b c d e f g h i j k l m n o p q r s t u v w x y z) do (
-    set "tmp=!tmp:%%b=%%b!"
-  )
+  set "tmp=!tmp:a=A!"
+  set "tmp=!tmp:b=B!"
+  set "tmp=!tmp:c=C!"
+  set "tmp=!tmp:d=D!"
+  set "tmp=!tmp:e=E!"
+  set "tmp=!tmp:f=F!"
+  set "tmp=!tmp:g=G!"
+  set "tmp=!tmp:h=H!"
+  set "tmp=!tmp:i=I!"
+  set "tmp=!tmp:j=J!"
+  set "tmp=!tmp:k=K!"
+  set "tmp=!tmp:l=L!"
+  set "tmp=!tmp:m=M!"
+  set "tmp=!tmp:n=N!"
+  set "tmp=!tmp:o=O!"
+  set "tmp=!tmp:p=P!"
+  set "tmp=!tmp:q=Q!"
+  set "tmp=!tmp:r=R!"
+  set "tmp=!tmp:s=S!"
+  set "tmp=!tmp:t=T!"
+  set "tmp=!tmp:u=U!"
+  set "tmp=!tmp:v=V!"
+  set "tmp=!tmp:w=W!"
+  set "tmp=!tmp:x=X!"
+  set "tmp=!tmp:y=Y!"
+  set "tmp=!tmp:z=Z!"
   set "%1=!tmp!"
 )
 goto :eof
@@ -180,9 +203,10 @@ goto :eof
 :padnum
 set "val=%1"
 set "pad=%~2"
-set "padded=%val%"
-for /l %%i in (1,1,%pad%) do if "!padded:~%%i,1!"=="" set "padded=0!padded!"
-set "%val%=%padded%"
+set "padded=!%val%!"
+for /l %%i in (1,1,%pad%) do set "padded=0!padded!"
+set "padded=!padded:~-%pad%!"
+set "%val%=!padded!"
 goto :eof
 
 :verify_file

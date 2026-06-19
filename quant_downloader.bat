@@ -115,25 +115,35 @@ for /f "usebackq tokens=1,* delims==" %%a in ("%RECIPE%") do (
   )
 )
 
-echo [%DATE% %TIME%] Found qtypes: %RECIPE_QTYPES%
-
 REM For each qtype, download shards
 for %%q in (%RECIPE_QTYPES%) do (
   echo [%DATE% %TIME%] Processing qtype: %%q
   
   REM Use Python's gguf_info to get shard info from map files
   REM First try downloading the tensors.map for this qtype
-  "%TENSOR_DOWNLOADER%" "%%q" 0 "%OUTPUT_DIR%" "tensors.%%q.map"
+  call "%TENSOR_DOWNLOADER%" "%%q" 0 "%OUTPUT_DIR%" "tensors.%%q.map"
   
-  REM Download individual shard files
-  REM The recipe's regex patterns tell us what to download
-  REM For now, use the simple approach: download all shards listed in the recipe
-  for /f "usebackq eol=# tokens=1,* delims==" %%a in ("%RECIPE%") do (
-    if not "%%b"=="" (
-      set "regex=%%a"
-      set "tqtype=%%b"
-      if /i "!tqtype!"=="%%q" (
-        echo [%DATE% %TIME%] Pattern !regex! ^=^> %%q
+  REM Download individual shard files from the map file
+  set "MAPFILE=%OUTPUT_DIR%\tensors.%%q.map"
+  if exist "!MAPFILE!" (
+    echo [%DATE% %TIME%] Processing map file !MAPFILE!
+    for /f "usebackq tokens=1 delims=:" %%a in ("!MAPFILE!") do (
+      set "FNAME=%%a"
+      set "FNAME_SPACES=!FNAME:-= !"
+      set "PREV="
+      set "CHUNK="
+      for %%w in (!FNAME_SPACES!) do (
+        if "%%w"=="of" set "CHUNK=!PREV!"
+        set "PREV=%%w"
+      )
+      if defined CHUNK (
+        set /a "CHUNKNUM=1!CHUNK!-100000" 2>nul
+        if defined CHUNKNUM (
+          if not defined _S_%%q_!CHUNKNUM! (
+            set "_S_%%q_!CHUNKNUM!=1"
+            call "%TENSOR_DOWNLOADER%" "%%q" !CHUNKNUM! "%OUTPUT_DIR%"
+          )
+        )
       )
     )
   )
