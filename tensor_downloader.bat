@@ -219,12 +219,6 @@ if "%FILEID%"=="-1" exit /b 0
 if "%FILEID%"=="-2" exit /b 0
 
 REM Check GGUF magic bytes: first 4 bytes should be "GGUF"
-for /f "skip=1 delims=:" %%a in ('certutil -encodehex "%file%" 2^>nul ^| findstr /r "^[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]"') do (
-  set "hex=%%a"
-  goto :check_magic
-)
-:check_magic
-if defined hex (
-  if "!hex:~0,4!"=="4747" if "!hex:~4,4!"=="5546" (exit /b 0) else (exit /b 1)
-)
-exit /b 0
+< "%file%" set /p "magic=" 2>nul
+if defined magic if "!magic:~0,4!"=="GGUF" exit /b 0
+exit /b 1
