@@ -115,46 +115,58 @@ for /f "usebackq tokens=1,* delims==" %%a in ("%RECIPE%") do (
   )
 )
 
-REM Try each qtype until one has a valid map, then download its shards
+REM Phase 1: Download all map files for all qtypes in the recipe
+echo [%DATE% %TIME%] Phase 1: Downloading map files...
 for %%q in (%RECIPE_QTYPES%) do (
-  echo [%DATE% %TIME%] Processing qtype: %%q
-  
-  REM First try downloading the tensors.map for this qtype
+  echo [%DATE% %TIME%]   Map for qtype: %%q
   call "%TENSOR_DOWNLOADER%" "%%q" 0 "%OUTPUT_DIR%" "tensors.%%q.map"
-  
-  REM Download individual shard files from the map file
-  set "MAPFILE=%OUTPUT_DIR%\tensors.%%q.map"
-  if exist "!MAPFILE!" (
-    set "PRIMARY_QT=%%q"
-    echo [%DATE% %TIME%] Processing map file !MAPFILE! for primary qtype %%q
-    for /f "usebackq tokens=1 delims=:" %%a in ("!MAPFILE!") do (
-      set "FNAME=%%a"
-      set "FNAME_SPACES=!FNAME:-= !"
-      set "PREV="
-      set "CHUNK="
-      for %%w in (!FNAME_SPACES!) do (
-        if "%%w"=="of" set "CHUNK=!PREV!"
-        set "PREV=%%w"
-      )
-      if defined CHUNK (
-        set /a "CHUNKNUM=1!CHUNK!-100000" 2>nul
-        if defined CHUNKNUM (
-          if not defined _S_!PRIMARY_QT!_!CHUNKNUM! (
-            set "_S_!PRIMARY_QT!_!CHUNKNUM!=1"
-            call "%TENSOR_DOWNLOADER%" "!PRIMARY_QT!" !CHUNKNUM! "%OUTPUT_DIR%"
+)
+
+REM Phase 2: For each recipe regex, match tensors in the designated qtype's map
+echo [%DATE% %TIME%] Phase 2: Matching tensors...
+for /f "usebackq tokens=1,* delims==" %%r in ("%RECIPE%") do (
+  set "FIRST_CHAR=%%r"
+  set "FIRST_CHAR=!FIRST_CHAR:~0,1!"
+  if not "!FIRST_CHAR!"=="#" if not "!FIRST_CHAR!"=="" if not "!FIRST_CHAR!"=="[" (
+    set "REGEX=%%r"
+    set "QTYPE_RAW=%%s"
+    set "QTYPE_RAW=!QTYPE_RAW: =!"
+    if not "!QTYPE_RAW!"=="" (
+      set "MAPFILE=%OUTPUT_DIR%\tensors.!QTYPE_RAW!.map"
+      if exist "!MAPFILE!" (
+        for /f "usebackq tokens=1,3 delims=:" %%a in ("!MAPFILE!") do (
+          set "FNAME=%%a"
+          set "TENSOR=%%b"
+          for /f "delims=" %%m in ('echo !TENSOR!^| findstr /r "!REGEX!"') do (
+            set "FNAME_SPACES=!FNAME:-= !"
+            set "PREV="
+            set "CHUNK="
+            for %%w in (!FNAME_SPACES!) do (
+              if "%%w"=="of" set "CHUNK=!PREV!"
+              set "PREV=%%w"
+            )
+            if defined CHUNK (
+              set /a "CHUNKNUM=1!CHUNK!-100000" 2>nul
+              if defined CHUNKNUM (
+                if not defined _S_!QTYPE_RAW!_!CHUNKNUM! (
+                  set "_S_!QTYPE_RAW!_!CHUNKNUM!=1"
+                  call "%TENSOR_DOWNLOADER%" "!QTYPE_RAW!" !CHUNKNUM! "%OUTPUT_DIR%"
+                )
+              )
+            )
           )
         )
       )
     )
-    REM Download shard 00001 from BF16 (base model head, not listed in per-qtype maps)
-    if not defined _S_00001 (
-      set "_S_00001=1"
-      call "%TENSOR_DOWNLOADER%" "BF16" 1 "%OUTPUT_DIR%"
-    )
-    goto :done_downloads
   )
 )
-:done_downloads
+
+REM Download shard 00001 from BF16 (base model head, not in any map)
+if not defined _S_00001 (
+  echo [%DATE% %TIME%] Downloading shard 00001 from BF16...
+  set "_S_00001=1"
+  call "%TENSOR_DOWNLOADER%" "BF16" 1 "%OUTPUT_DIR%"
+)
 
 echo [%DATE% %TIME%] All downloads complete for model %MODEL_NAME%
 exit /b 0
