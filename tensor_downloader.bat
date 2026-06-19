@@ -26,16 +26,19 @@ set "CHUNKS_TOTAL=1148"
 REM ---- Load download.conf if present ----
 REM Only MODEL_NAME, MAINTAINER, CHUNK_FIRST, CHUNKS_TOTAL are read
 if exist "%SCRIPT_DIR%\download.conf" (
-  for /f "usebackq tokens=1,* delims==" %%a in ("%SCRIPT_DIR%\download.conf") do (
-    set "_k=%%a"
-    set "_v=%%b"
-    if defined _v (
-      set "_k=!_k: =!"
-      if not "!_k:~0,1!"=="#" (
-        for %%x in (MODEL_NAME MAINTAINER CHUNK_FIRST CHUNKS_TOTAL) do (
-          if /i "!_k!"=="%%x" (
-            set "_v=!_v:"=!"
-            set "%%x=!_v!"
+  for /f "usebackq delims=" %%a in ("%SCRIPT_DIR%\download.conf") do (
+    set "CFGFILE=%SCRIPT_DIR%\%%a"
+    if exist "!CFGFILE!" (
+      for /f "usebackq tokens=1,* delims==" %%b in ("!CFGFILE!") do (
+        set "_k=%%b"
+        set "_v=%%c"
+        if defined _k if defined _v (
+          set "_k=!_k: =!"
+          for %%x in (MODEL_NAME MAINTAINER CHUNK_FIRST CHUNKS_TOTAL) do (
+            if /i "!_k!"=="%%x" (
+              set "_v=!_v:"=!"
+              set "%%x=!_v!"
+            )
           )
         )
       )

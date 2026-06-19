@@ -23,13 +23,18 @@ set "ZBST_FLAG="
 set "SKIP_GPG=true"
 
 :parse_args
-if "%~1"=="" goto :show_help
+if "%~1"=="" goto :check_args
 if /i "%~1"=="--help" goto :show_help
 if "%~1"=="-z" set "ZBST_FLAG=+" & shift & goto :parse_args
 if "%~1"=="-d" set "DECOMPRESS=1" & shift & goto :parse_args
 if "%~1"=="-o" set "OUTPUT_DIR=%~2" & shift & shift & goto :parse_args
 if "%~1"=="--skip-gpg" set "SKIP_GPG=true" & shift & goto :parse_args
 REM Positional argument - recipe file
+if not defined RECIPE set "RECIPE=%~1" & shift & goto :parse_args
+goto :show_help
+
+:check_args
+if not defined RECIPE goto :show_help
 goto :done_args
 
 :show_help
@@ -52,14 +57,13 @@ exit /b 2
 :done_args
 if "%ZBST_FLAG%"=="" set "ZBST_FLAG="
 
-set "RECIPE=%~1"
 if not exist "%RECIPE%" (
   echo Error: Recipe file not found: %RECIPE%
   exit /b 1
 )
 
 REM Validate recipe file extension (.recipe, .recipe.txt, .txt)
-set "fname=%~nx1"
+for %%f in ("%RECIPE%") do set "fname=%%~nxf"
 echo %fname%| findstr /i /e /c:".recipe" >nul 2>&1
 if errorlevel 1 (
   echo %fname%| findstr /i /e /c:".txt" >nul 2>&1
@@ -78,6 +82,20 @@ REM Parse recipe file
 set "SECTION_HEADER="
 set "RECIPE_QTYPES="
 echo [%DATE% %TIME%] Loading recipe: %RECIPE%
+
+REM Extract model name from recipe (first # Model name: line)
+set "MODEL_NAME="
+for /f "usebackq tokens=1,* delims=:" %%a in (`findstr /b /l /c:"# Model name:" "%RECIPE%"`) do (
+  if not "%%b"=="" set "MODEL_NAME=%%b"
+)
+if defined MODEL_NAME if "!MODEL_NAME:~0,1!"==" " set "MODEL_NAME=!MODEL_NAME:~1!"
+if defined MODEL_NAME if "!MODEL_NAME:~-1!"==" " set "MODEL_NAME=!MODEL_NAME:~0,-1!"
+
+REM Default output dir: SCRIPT_ROOT\MODEL_NAME\ when -o not given
+if "%OUTPUT_DIR%"=="" if defined MODEL_NAME set "OUTPUT_DIR=%SCRIPT_DIR%\%MODEL_NAME%"
+if "%OUTPUT_DIR%"=="" set "OUTPUT_DIR=%SCRIPT_DIR%\output"
+
+if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 REM Read recipe and extract qtypes
 for /f "usebackq tokens=1,* delims==" %%a in ("%RECIPE%") do (
@@ -102,8 +120,6 @@ echo [%DATE% %TIME%] Found qtypes: %RECIPE_QTYPES%
 REM For each qtype, download shards
 for %%q in (%RECIPE_QTYPES%) do (
   echo [%DATE% %TIME%] Processing qtype: %%q
-  set "QTYPE=%%q"
-  for %%b in (a b c d e f g h i j k l m n o p q r s t u v w x y z) do set "QTYPE=!QTYPE:%%b=%%b!"
   
   REM Use Python's gguf_info to get shard info from map files
   REM First try downloading the tensors.map for this qtype
@@ -125,13 +141,3 @@ for %%q in (%RECIPE_QTYPES%) do (
 
 echo [%DATE% %TIME%] All downloads complete.
 exit /b 0
-
-:toupper
-for %%a in (%1) do (
-  set "tmp=!%%a!"
-  for %%b in (a b c d e f g h i j k l m n o p q r s t u v w x y z) do (
-    set "tmp=!tmp:%%b=%%b!"
-  )
-  set "%1=!tmp!"
-)
-goto :eof
