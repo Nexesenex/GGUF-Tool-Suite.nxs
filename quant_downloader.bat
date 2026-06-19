@@ -122,43 +122,47 @@ for %%q in (%RECIPE_QTYPES%) do (
   call "%TENSOR_DOWNLOADER%" "%%q" 0 "%OUTPUT_DIR%" "tensors.%%q.map"
 )
 
-REM Phase 2: For each recipe regex, match tensors in the designated qtype's map
-echo [%DATE% %TIME%] Phase 2: Matching tensors...
-for /f "usebackq tokens=1,* delims==" %%r in ("%RECIPE%") do (
-  set "FIRST_CHAR=%%r"
-  set "FIRST_CHAR=!FIRST_CHAR:~0,1!"
-  if not "!FIRST_CHAR!"=="#" if not "!FIRST_CHAR!"=="" if not "!FIRST_CHAR!"=="[" (
-    set "REGEX=%%r"
-    set "QTYPE_RAW=%%s"
-    set "QTYPE_RAW=!QTYPE_RAW: =!"
-    if not "!QTYPE_RAW!"=="" (
-      set "MAPFILE=%OUTPUT_DIR%\tensors.!QTYPE_RAW!.map"
-      if exist "!MAPFILE!" (
-        for /f "usebackq tokens=1,3 delims=:" %%a in ("!MAPFILE!") do (
-          set "FNAME=%%a"
-          set "TENSOR=%%b"
-          set "TF=%TEMP%\_tm_!RANDOM!.txt"
-          >"!TF!" echo(!TENSOR!
-          findstr /r "!REGEX!" "!TF!" >nul 2>&1
-          if !errorlevel! equ 0 (
-            set "FNAME_SPACES=!FNAME:-= !"
-            set "PREV="
-            set "CHUNK="
-            for %%w in (!FNAME_SPACES!) do (
-              if "%%w"=="of" set "CHUNK=!PREV!"
-              set "PREV=%%w"
-            )
-            if defined CHUNK (
-              set /a "CHUNKNUM=1!CHUNK!-100000" 2>nul
-              if defined CHUNKNUM (
-                if not defined _S_!QTYPE_RAW!_!CHUNKNUM! (
-                  set "_S_!QTYPE_RAW!_!CHUNKNUM!=1"
-                  call "%TENSOR_DOWNLOADER%" "!QTYPE_RAW!" !CHUNKNUM! "%OUTPUT_DIR%"
+REM Phase 2: For each qtype, scan its map in order and match all recipe regexes
+echo [%DATE% %TIME%] Phase 2: Matching tensors by qtype...
+for %%q in (%RECIPE_QTYPES%) do (
+  set "MAPFILE=%OUTPUT_DIR%\tensors.%%q.map"
+  if exist "!MAPFILE!" (
+    echo [%DATE% %TIME%]   Scanning qtype %%q...
+    for /f "usebackq tokens=1,3 delims=:" %%a in ("!MAPFILE!") do (
+      set "FNAME=%%a"
+      set "TENSOR=%%b"
+      REM Check each recipe regex assigned to this qtype
+      for /f "usebackq tokens=1,* delims==" %%r in ("%RECIPE%") do (
+        set "FIRST_CHAR=%%r"
+        set "FIRST_CHAR=!FIRST_CHAR:~0,1!"
+        if not "!FIRST_CHAR!"=="#" if not "!FIRST_CHAR!"=="" if not "!FIRST_CHAR!"=="[" (
+          set "REGEX=%%r"
+          set "QTYPE_CHECK=%%s"
+          set "QTYPE_CHECK=!QTYPE_CHECK: =!"
+          if /i "!QTYPE_CHECK!"=="%%q" (
+            set "TF=%TEMP%\_tm_!RANDOM!.txt"
+            >"!TF!" echo(!TENSOR!
+            findstr /r "!REGEX!" "!TF!" >nul 2>&1
+            if !errorlevel! equ 0 (
+              set "FNAME_SPACES=!FNAME:-= !"
+              set "PREV="
+              set "CHUNK="
+              for %%w in (!FNAME_SPACES!) do (
+                if "%%w"=="of" set "CHUNK=!PREV!"
+                set "PREV=%%w"
+              )
+              if defined CHUNK (
+                set /a "CHUNKNUM=1!CHUNK!-100000" 2>nul
+                if defined CHUNKNUM (
+                  if not defined _S_%%q_!CHUNKNUM! (
+                    set "_S_%%q_!CHUNKNUM!=1"
+                    call "%TENSOR_DOWNLOADER%" "%%q" !CHUNKNUM! "%OUTPUT_DIR%"
+                  )
                 )
               )
             )
+            del "!TF!" 2>nul
           )
-          del "!TF!" 2>nul
         )
       )
     )
