@@ -9,3 +9,4 @@ models/*/group0_files
 .DS_Store
 *.dat
 download.conf
+/IKL
