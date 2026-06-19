@@ -115,7 +115,7 @@ for /f "usebackq tokens=1,* delims==" %%a in ("%RECIPE%") do (
   )
 )
 
-REM For each qtype, download shards
+REM Try each qtype until one has a valid map, then download its shards
 for %%q in (%RECIPE_QTYPES%) do (
   echo [%DATE% %TIME%] Processing qtype: %%q
   
@@ -125,7 +125,8 @@ for %%q in (%RECIPE_QTYPES%) do (
   REM Download individual shard files from the map file
   set "MAPFILE=%OUTPUT_DIR%\tensors.%%q.map"
   if exist "!MAPFILE!" (
-    echo [%DATE% %TIME%] Processing map file !MAPFILE!
+    set "PRIMARY_QT=%%q"
+    echo [%DATE% %TIME%] Processing map file !MAPFILE! for primary qtype %%q
     for /f "usebackq tokens=1 delims=:" %%a in ("!MAPFILE!") do (
       set "FNAME=%%a"
       set "FNAME_SPACES=!FNAME:-= !"
@@ -138,9 +139,9 @@ for %%q in (%RECIPE_QTYPES%) do (
       if defined CHUNK (
         set /a "CHUNKNUM=1!CHUNK!-100000" 2>nul
         if defined CHUNKNUM (
-          if not defined _S_%%q_!CHUNKNUM! (
-            set "_S_%%q_!CHUNKNUM!=1"
-            call "%TENSOR_DOWNLOADER%" "%%q" !CHUNKNUM! "%OUTPUT_DIR%"
+          if not defined _S_!PRIMARY_QT!_!CHUNKNUM! (
+            set "_S_!PRIMARY_QT!_!CHUNKNUM!=1"
+            call "%TENSOR_DOWNLOADER%" "!PRIMARY_QT!" !CHUNKNUM! "%OUTPUT_DIR%"
           )
         )
       )
@@ -150,8 +151,10 @@ for %%q in (%RECIPE_QTYPES%) do (
       set "_S_00001=1"
       call "%TENSOR_DOWNLOADER%" "BF16" 1 "%OUTPUT_DIR%"
     )
+    goto :done_downloads
   )
 )
+:done_downloads
 
 echo [%DATE% %TIME%] All downloads complete for model %MODEL_NAME%
 exit /b 0
