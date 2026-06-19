@@ -50,6 +50,7 @@ if "%~1"=="" (
   echo.
   echo Example:
   echo   %~nx0 recipe_examples/my_model.recipe
+echo   %~nx0 recipe_examples/my_model.txt
   exit /b 2
 )
 
@@ -57,6 +58,17 @@ set "RECIPE=%~1"
 if not exist "%RECIPE%" (
   echo Error: Recipe file not found: %RECIPE%
   exit /b 1
+)
+
+REM Validate recipe file extension (.recipe, .recipe.txt, .txt)
+set "fname=%~nx1"
+echo %fname%| findstr /i /e /c:".recipe" >nul 2>&1
+if errorlevel 1 (
+  echo %fname%| findstr /i /e /c:".txt" >nul 2>&1
+  if errorlevel 1 (
+    echo Warning: Unrecognized recipe extension. Expected .recipe, .recipe.txt, or .txt.
+    echo Accepted: %fname%
+  )
 )
 
 if not exist "%TENSOR_DOWNLOADER%" (

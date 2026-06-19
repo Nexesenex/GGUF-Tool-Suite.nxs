@@ -20,6 +20,7 @@ set "MODEL_NAME="
 set "MODEL_LINK="
 set "PPL="
 set "raw_ppl="
+set "OUT_EXT=.recipe"
 
 :parse_args
 if "%~1"=="" goto :done_args
@@ -27,6 +28,7 @@ if /i "%~1"=="--no-file" set "NO_FILE=1" & shift & goto :parse_args
 if /i "%~1"=="--model-name" set "MODEL_NAME=%~2" & shift & shift & goto :parse_args
 if /i "%~1"=="--model-link" set "MODEL_LINK=%~2" & shift & shift & goto :parse_args
 if /i "%~1"=="--add-ppl" set "raw_ppl=%~2" & for /f %%p in ('powershell -NoProfile -C "[math]::Round(%~2,4).ToString('0.0000')"') do set "PPL=%%p" & shift & shift & goto :parse_args
+if /i "%~1"=="--txt" set "OUT_EXT=.txt" & shift & goto :parse_args
 if /i "%~1"=="-h" goto :show_help
 if /i "%~1"=="--help" goto :show_help
 shift
@@ -38,6 +40,7 @@ echo.
 echo   --no-file         Do not write output to a file; just print.
 echo   --model-name NAME Optional. Prepends NAME to the output filename.
 echo   --add-ppl VALUE   Optional. Adds PPL after username in filename.
+echo   --txt             Output .txt instead of .recipe extension.
 echo.
 echo Example output filename:
 echo   MODEL.USER.PPL_PPL.TOTALGB_GGUF-GPUGB_GPU-CPUGB_CPU.HASH1-HASH2.recipe
@@ -69,7 +72,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "# Build output filename" ^
   "$outName = if ($modelName) { $modelName } else { 'recipe' }; " ^
   "if ($ppl) { $outName = $outName + '.' + $ppl + '_PPL'; } " ^
-  "$outName = $outName + '.recipe'; " ^
+  "$outName = $outName + '%OUT_EXT%'; " ^
   "" ^
   "# Print the recipe" ^
   "Write-Host \"## Quant mix recipe created using Thireus' GGUF Tool Suite - https://gguf.thireus.com/\"; " ^

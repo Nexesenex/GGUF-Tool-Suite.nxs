@@ -6,7 +6,7 @@ REM ** estimate_gguf_size.bat - Windows port of estimate_gguf_    **
 REM ** size.sh. Computes total tensor sizes for matched regex      **
 REM ** tensors.                                                    **
 REM **                                                              **
-REM ** Usage: type recipe.txt ^| estimate_gguf_size.bat             **
+REM ** Usage: type recipe.recipe ^| estimate_gguf_size.bat           **
 REM **        estimate_gguf_size.bat ^< recipe.txt                  **
 REM ******************************************************************
 

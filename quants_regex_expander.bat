@@ -7,7 +7,7 @@ REM ** for troubleshooting purposes. Windows port of the .sh file.  **
 REM **                                                              **
 REM ** Reads stdin or uses built-in recipe data.                    **
 REM **                                                              **
-REM ** Usage: type recipe.txt ^| quants_regex_expander.bat          **
+REM ** Usage: type recipe.recipe ^| quants_regex_expander.bat        **
 REM **        quants_regex_expander.bat ^< recipe.txt               **
 REM ******************************************************************
 
