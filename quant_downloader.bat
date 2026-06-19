@@ -119,7 +119,6 @@ REM For each qtype, download shards
 for %%q in (%RECIPE_QTYPES%) do (
   echo [%DATE% %TIME%] Processing qtype: %%q
   
-  REM Use Python's gguf_info to get shard info from map files
   REM First try downloading the tensors.map for this qtype
   call "%TENSOR_DOWNLOADER%" "%%q" 0 "%OUTPUT_DIR%" "tensors.%%q.map"
   
@@ -146,8 +145,13 @@ for %%q in (%RECIPE_QTYPES%) do (
         )
       )
     )
+    REM Download shard 00001 from BF16 (base model head, not listed in per-qtype maps)
+    if not defined _S_00001 (
+      set "_S_00001=1"
+      call "%TENSOR_DOWNLOADER%" "BF16" 1 "%OUTPUT_DIR%"
+    )
   )
 )
 
-echo [%DATE% %TIME%] All downloads complete.
+echo [%DATE% %TIME%] All downloads complete for model %MODEL_NAME%
 exit /b 0
