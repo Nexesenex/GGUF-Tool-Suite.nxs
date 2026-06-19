@@ -24,24 +24,50 @@ set "CHUNK_FIRST=2"
 set "CHUNKS_TOTAL=1148"
 
 REM ---- Load download.conf if present ----
+REM Only MODEL_NAME, MAINTAINER, CHUNK_FIRST, CHUNKS_TOTAL are read
 if exist "%SCRIPT_DIR%\download.conf" (
   for /f "usebackq delims=" %%a in ("%SCRIPT_DIR%\download.conf") do (
-    if exist "%%a" (
-      for /f "usebackq delims=" %%b in ("%%a") do set "%%b"
+    set "CFGFILE=%SCRIPT_DIR%\%%a"
+    if exist "!CFGFILE!" (
+      for /f "usebackq tokens=1,* delims==" %%b in ("!CFGFILE!") do (
+        set "_k=%%b"
+        set "_v=%%c"
+        if defined _k if defined _v (
+          set "_k=!_k: =!"
+          for %%x in (MODEL_NAME MAINTAINER CHUNK_FIRST CHUNKS_TOTAL) do (
+            if /i "!_k!"=="%%x" (
+              set "_v=!_v:"=!"
+              set "%%x=!_v!"
+            )
+          )
+        )
+      )
     )
   )
 )
 
 REM ---- Parse arguments ----
-if "%~1"=="" (
-  echo Usage: %~nx0 QUANT FileID [DestinationDir] [Filename]
-  echo.
-  echo   QUANT    (mandatory) quantization tag, e.g. "BF16"
-  echo   FileID   (mandatory) integer chunk ID; 0=tensors.map, -1=tensors.map.sig
-  echo   DestDir  (optional) default: "."
-  echo   Filename (optional) default: auto-detected
-  exit /b 2
-)
+if "%~1"=="" goto :show_usage
+
+set "QUANT=%~1"
+set "FILEID=%~2"
+set "DEST=%~3"
+set "CUSTOM_FILENAME=%~4"
+
+if "%FILEID%"=="" goto :show_usage
+
+goto :after_usage
+
+:show_usage
+echo Usage: %~nx0 QUANT FileID [DestinationDir] [Filename]
+echo.
+echo   QUANT    ^(mandatory^) quantization tag, e.g. "BF16"
+echo   FileID   ^(mandatory^) integer chunk ID; 0=tensors.map, -1=tensors.map.sig
+echo   DestDir  ^(optional^) default: "."
+echo   Filename ^(optional^) default: auto-detected
+exit /b 2
+
+:after_usage
 
 set "QUANT=%~1"
 set "FILEID=%~2"

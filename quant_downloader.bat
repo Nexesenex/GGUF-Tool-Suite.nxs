@@ -23,36 +23,34 @@ set "ZBST_FLAG="
 set "SKIP_GPG=true"
 
 :parse_args
-if "%~1"=="" goto :done_args
+if "%~1"=="" goto :show_help
 if /i "%~1"=="--help" goto :show_help
-if "%~1"=="-z" set "ZBST_FLAG=+"
-if "%~1"=="-d" set "DECOMPRESS=1"
-if "%~1"=="-o" set "OUTPUT_DIR=%~2" & shift
-if "%~1"=="--skip-gpg" set "SKIP_GPG=true"
-shift
-goto :parse_args
+if "%~1"=="-z" set "ZBST_FLAG=+" & shift & goto :parse_args
+if "%~1"=="-d" set "DECOMPRESS=1" & shift & goto :parse_args
+if "%~1"=="-o" set "OUTPUT_DIR=%~2" & shift & shift & goto :parse_args
+if "%~1"=="--skip-gpg" set "SKIP_GPG=true" & shift & goto :parse_args
+REM Positional argument - recipe file
+goto :done_args
+
+:show_help
+echo Usage: %~nx0 [options] ^<recipe_file^>
+echo.
+echo Download GGUF model shards from a recipe file.
+echo.
+echo Options:
+echo   -z           Download .zbst compressed variants
+echo   -d           Decompress .zbst files after download
+echo   -o DIR       Output directory
+echo   --skip-gpg   Skip GPG verification
+echo.
+echo Example:
+echo   %~nx0 recipe_examples/my_model.recipe
+echo   %~nx0 recipe_examples/my_model.txt
+echo   %~nx0 recipe_examples/my_model.recipe.txt
+exit /b 2
 
 :done_args
-
-REM Recipe file is first positional arg
 if "%ZBST_FLAG%"=="" set "ZBST_FLAG="
-if "%~1"=="" (
-  :show_help
-  echo Usage: %~nx0 [options] ^<recipe_file^>
-  echo.
-  echo Download GGUF model shards from a recipe file.
-  echo.
-  echo Options:
-  echo   -z           Download .zbst compressed variants
-  echo   -d           Decompress .zbst files after download
-  echo   -o DIR       Output directory
-  echo   --skip-gpg   Skip GPG verification
-  echo.
-  echo Example:
-  echo   %~nx0 recipe_examples/my_model.recipe
-echo   %~nx0 recipe_examples/my_model.txt
-  exit /b 2
-)
 
 set "RECIPE=%~1"
 if not exist "%RECIPE%" (
