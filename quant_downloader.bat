@@ -137,7 +137,10 @@ for /f "usebackq tokens=1,* delims==" %%r in ("%RECIPE%") do (
         for /f "usebackq tokens=1,3 delims=:" %%a in ("!MAPFILE!") do (
           set "FNAME=%%a"
           set "TENSOR=%%b"
-          for /f "delims=" %%m in ('echo !TENSOR!^| findstr /r "!REGEX!"') do (
+          set "TF=%TEMP%\_tm_!RANDOM!.txt"
+          >"!TF!" echo(!TENSOR!
+          findstr /r "!REGEX!" "!TF!" >nul 2>&1
+          if !errorlevel! equ 0 (
             set "FNAME_SPACES=!FNAME:-= !"
             set "PREV="
             set "CHUNK="
@@ -155,6 +158,7 @@ for /f "usebackq tokens=1,* delims==" %%r in ("%RECIPE%") do (
               )
             )
           )
+          del "!TF!" 2>nul
         )
       )
     )
