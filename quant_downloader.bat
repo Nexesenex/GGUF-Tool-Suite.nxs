@@ -103,7 +103,7 @@ REM For each qtype, download shards
 for %%q in (%RECIPE_QTYPES%) do (
   echo [%DATE% %TIME%] Processing qtype: %%q
   set "QTYPE=%%q"
-  call :toupper QTYPE
+  for %%b in (a b c d e f g h i j k l m n o p q r s t u v w x y z) do set "QTYPE=!QTYPE:%%b=%%b!"
   
   REM Use Python's gguf_info to get shard info from map files
   REM First try downloading the tensors.map for this qtype
